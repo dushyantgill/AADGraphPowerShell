@@ -1,3 +1,9 @@
+##################################################################################################
+#                                        Index                                                   #
+# Private Functions -----------------------------------------------------------------  Line 7    #
+# Exported "Script Cmdlets" Functions -----------------------------------------------  Line 161  #
+##################################################################################################
+
 function Load-ActiveDirectoryAuthenticationLibrary(){
   $mydocuments = [environment]::getfolderpath("mydocuments")
   if(-not (Test-Path ($mydocuments+"\Nugets"))) {New-Item -Path ($mydocuments+"\Nugets") -ItemType "Directory" | out-null}
@@ -165,11 +171,11 @@ function Connect-AAD {
 function Get-AADUser {
   [CmdletBinding()]
   param (
-      [parameter(Mandatory=$false,
-      ValueFromPipeline=$true,
-      HelpMessage="Either the ObjectId or the UserPrincipalName of the User.")]
-      [string]
-      $Id
+    [parameter(Mandatory=$false,
+    ValueFromPipeline=$true,
+    HelpMessage="Either the ObjectId or the UserPrincipalName of the User.")]
+    [string]
+    $Id
   )
   PROCESS {
     if($Id -ne "") {
@@ -181,4 +187,174 @@ function Get-AADUser {
   }
 }
 
-Export-ModuleMember –function Connect-AAD, Get-AADUser
+function New-AADUser {
+  [CmdletBinding()]
+  param (
+    [parameter(Mandatory=$false, 
+    HelpMessage="Controls whether the new user account is created enabled or disabled. The default value is true.")]
+    [string]
+    $accountEnabled = $true, 
+    
+    [parameter(Mandatory=$true,
+    HelpMessage="The name displayed in the address book for the user.")]
+    [string]
+    $displayName, 
+    
+    [parameter(Mandatory=$true,
+    HelpMessage="The email alias of the new user.")]
+    [string]
+    $mailNickname, 
+    
+    [parameter(Mandatory=$true,
+    HelpMessage="This is the user name that the new user will use for login. By convention, this should map to the user's email name. The general format is alias@domain, where domain must be present in the tenant’s collection of verified domains.")]
+    [string]
+    $userPrincipalName, 
+    
+    [parameter(Mandatory=$true,
+    HelpMessage="The display name of the new user.")]
+    [string]
+    $password, 
+
+    [parameter(Mandatory=$false,
+    HelpMessage="Controls whether the new user will be required to change their password at the next interactive login. The default value is true.")]
+    [string]
+    $forceChangePasswordNextLogin = $true,
+    
+    [parameter(Mandatory=$false,
+    HelpMessage="The city in which the user is located.")]
+    [string]
+    $city,
+    
+    [parameter(Mandatory=$false,
+    HelpMessage="The country/region in which the user is located.")]
+    [string]
+    $country,
+    
+    [parameter(Mandatory=$false,
+    HelpMessage="The name for the department in which the user works.")]
+    [string]
+    $department,
+    
+    [parameter(Mandatory=$false,
+    HelpMessage="Indicates whether this object was synced from the on-premises directory.")]
+    [bool]
+    $dirSyncEnabled,
+    
+    [parameter(Mandatory=$false,
+    HelpMessage="The telephone number of the user's business fax machine.")]
+    [alias("Fax")]
+    [string]
+    $facsimileTelephoneNumber,
+    
+    [parameter(Mandatory=$false,
+    HelpMessage="The given name of the user.")]
+    [alias("FirstName")]
+    [string]
+    $givenName,
+    
+    [parameter(Mandatory=$false,
+    HelpMessage="The user’s job title.")]
+    [string]
+    $jobTitle,
+    
+    [parameter(Mandatory=$false,
+    HelpMessage="The emailaddress for the user, for example, 'jeff@contoso.onmicrosoft.com'.")]
+    [alias("Email","EmailAddress")]
+    [string]
+    $mail,
+    
+    [parameter(Mandatory=$false,
+    HelpMessage="The primary cellular telephone number for the user.")]
+    [string]
+    $mobile,
+    
+    [parameter(Mandatory=$false,
+    HelpMessage="A list of additional email addresses for the user.")]
+    [string[]]
+    $otherMails,
+    
+    [parameter(Mandatory=$false,
+    HelpMessage="Specifies password policies for the user, with one possible value being 'DisableStrongPassword', which allows weaker passwords than the default policy to be specified.")]
+    [ValidateSet("DisableStrongPassword")] 
+    [string]
+    $passwordPolicies,
+
+    [parameter(Mandatory=$false,
+    HelpMessage="The office location in the user's place of business.")]
+    [alias("Office")]
+    [string]
+    $physicalDeliveryOfficeName,
+    
+    [parameter(Mandatory=$false,
+    HelpMessage="The postal code in the user's postal address.")]
+    [alias("ZipCode")]
+    [string]
+    $postalCode,
+    
+    [parameter(Mandatory=$false,
+    HelpMessage="The preferred language for the user.")]
+    [string]
+    $preferredLanguage,
+    
+    [parameter(Mandatory=$false,
+    HelpMessage="The state or province in the user's postal address.")]
+    [string]
+    $state,      
+
+    [parameter(Mandatory=$false,
+    HelpMessage="The street address in the user's postal address.")]
+    [string]
+    $streetAddress,
+    
+    [parameter(Mandatory=$false,
+    HelpMessage="The user's surname (family name or last name).")]
+    [alias("LastName","FamilyName")]
+    [string]
+    $surname,
+    
+    [parameter(Mandatory=$false,
+    HelpMessage="The telephone number of the user.")]
+    [string]
+    $telephoneNumber,
+    
+    [parameter(Mandatory=$false,
+    HelpMessage="A thumbnail photo to be displayed for the user.")]
+    [alias("Photo")]
+    [byte[]]
+    $thumbnailPhoto,
+
+    [parameter(Mandatory=$false,
+    HelpMessage="Not sure what this is :).")]
+    [string]
+    $usageLocation
+  )
+  PROCESS {
+    # Mandatory properties of a new User
+    $newUserPasswordProfile = "" | Select password, forceChangePasswordNextLogin
+    $newUserPasswordProfile.password = $password
+    $newUserPasswordProfile.forceChangePasswordNextLogin = $forceChangePasswordNextLogin
+    
+    $newUser = "" | Select accountEnabled, displayName, mailNickname, passwordProfile, userPrincipalName
+    $newUser.accountEnabled = $accountEnabled
+    $newUser.displayName = $displayName
+    $newUser.mailNickname = $mailNickname
+    $newUser.passwordProfile = $newUserPasswordProfile
+    $newUser.userPrincipalName = $userPrincipalName
+           
+    #Optional parameters/properties
+    foreach($psbp in $PSBoundParameters.GetEnumerator()){
+      $key = $psbp.Key
+      $value = $psbp.Value
+      if($key -eq "city" -or $key -eq "country" -or $key -eq "department" -or $key -eq "dirSyncEnabled" -or $key -eq "facsimileTelephoneNumber" -or `
+      $key -eq "givenName" -or $key -eq "jobTitle" -or $key -eq "mail" -or $key -eq "mobile" -or $key -eq "otherMails" -or `
+      $key -eq "passwordPolicies" -or $key -eq "physicalDeliveryOfficeName" -or $key -eq "postalCode" -or $key -eq "preferredLanguage" -or `
+      $key -eq "state" -or $key -eq "streetAddress" -or $key -eq "surname" -or $key -eq "telephoneNumber"  -or $key -eq "thumbnailPhoto" -or $key -eq "usageLocation") {
+        Add-Member -InputObject $newUser –MemberType NoteProperty –Name $key –Value $value
+      }
+    }
+    
+    New-AADObject -Type users -Object $newUser
+  }
+}
+
+Export-ModuleMember –function Connect-AAD, Get-AADUser, New-AADUser
