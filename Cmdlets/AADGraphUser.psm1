@@ -22,7 +22,7 @@ function New-AADUser {
   param (
     [parameter(Mandatory=$false, ValueFromPipelineByPropertyName=$true,
     HelpMessage="Controls whether the new user account is created enabled or disabled. The default value is true.")]
-    [string]
+    [bool]
     $accountEnabled = $true, 
     
     [parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true,
@@ -47,7 +47,7 @@ function New-AADUser {
 
     [parameter(Mandatory=$false, ValueFromPipelineByPropertyName=$true,
     HelpMessage="Controls whether the new user will be required to change their password at the next interactive login. The default value is true.")]
-    [string]
+    [bool]
     $forceChangePasswordNextLogin = $true,
     
     [parameter(Mandatory=$false, ValueFromPipelineByPropertyName=$true,
@@ -148,12 +148,6 @@ function New-AADUser {
     $telephoneNumber,
     
     [parameter(Mandatory=$false, ValueFromPipelineByPropertyName=$true,
-    HelpMessage="A thumbnail photo to be displayed for the user.")]
-    [alias("Photo")]
-    [byte[]]
-    $thumbnailPhoto,
-
-    [parameter(Mandatory=$false, ValueFromPipelineByPropertyName=$true,
     HelpMessage="Not sure what this is :).")]
     [string]
     $usageLocation
@@ -178,8 +172,10 @@ function New-AADUser {
       if($key -eq "city" -or $key -eq "country" -or $key -eq "department" -or $key -eq "dirSyncEnabled" -or $key -eq "facsimileTelephoneNumber" -or `
       $key -eq "givenName" -or $key -eq "jobTitle" -or $key -eq "mail" -or $key -eq "mobile" -or $key -eq "otherMails" -or `
       $key -eq "passwordPolicies" -or $key -eq "physicalDeliveryOfficeName" -or $key -eq "postalCode" -or $key -eq "preferredLanguage" -or `
-      $key -eq "state" -or $key -eq "streetAddress" -or $key -eq "surname" -or $key -eq "telephoneNumber"  -or $key -eq "thumbnailPhoto" -or $key -eq "usageLocation") {
-        Add-Member -InputObject $newUser –MemberType NoteProperty –Name $key –Value $value
+      $key -eq "state" -or $key -eq "streetAddress" -or $key -eq "surname" -or $key -eq "telephoneNumber"  -or $key -eq "usageLocation") {
+        if($value -ne "" -and $value -ne $null){
+          Add-Member -InputObject $newUser –MemberType NoteProperty –Name $key –Value $value
+        }
       }
     }
     
@@ -338,12 +334,6 @@ function Set-AADUser {
     $telephoneNumber,
     
     [parameter(Mandatory=$false,
-    HelpMessage="A thumbnail photo to be displayed for the user.")]
-    [alias("Photo")]
-    [byte[]]
-    $thumbnailPhoto,
-
-    [parameter(Mandatory=$false,
     HelpMessage="Not sure what this is :).")]
     [string]
     $usageLocation
@@ -358,7 +348,7 @@ function Set-AADUser {
       $key -eq "city" -or $key -eq "country" -or $key -eq "department" -or $key -eq "dirSyncEnabled" -or $key -eq "facsimileTelephoneNumber" -or `
       $key -eq "givenName" -or $key -eq "jobTitle" -or $key -eq "mail" -or $key -eq "mobile" -or $key -eq "otherMails" -or `
       $key -eq "passwordPolicies" -or $key -eq "physicalDeliveryOfficeName" -or $key -eq "postalCode" -or $key -eq "preferredLanguage" -or `
-      $key -eq "state" -or $key -eq "streetAddress" -or $key -eq "surname" -or $key -eq "telephoneNumber"  -or $key -eq "thumbnailPhoto" -or $key -eq "usageLocation") {
+      $key -eq "state" -or $key -eq "streetAddress" -or $key -eq "surname" -or $key -eq "telephoneNumber" -or $key -eq "usageLocation") {
         Add-Member -InputObject $updatedUser -MemberType NoteProperty -Name $key -Value $value
       }
     }
@@ -370,5 +360,37 @@ function Set-AADUser {
     }
     
     Set-AADObject -Type users -Id $Id -Object $updatedUser
+  }
+}
+
+function Set-AADUserThumbnailPhoto {
+  [CmdletBinding()]
+  param (
+    [parameter(Mandatory=$true,
+    ValueFromPipeline=$true,
+    HelpMessage="Either the ObjectId or the UserPrincipalName of the User.")]
+    [string]
+    $Id,
+    
+    #cmdlet allows multiple ways to specify the thumbnail photo, using parameter sets.
+    [parameter(Mandatory=$true, 
+    HelpMessage="File path of the thumbnail photo of the user.",
+    ParameterSetName='FilePath')]
+    [ValidateScript({ Test-Path $_})]
+    [string]
+    $ThumbnailPhotoFilePath,  
+   
+    [parameter(Mandatory=$true, 
+    HelpMessage="Byte array representation of the thumbnail photo of the user.",
+    ParameterSetName='ByteArray')]
+    [byte[]]
+    $ThumbnailPhotoByteArray  
+  )
+  PROCESS {
+    $value = $null
+    if($PSBoundParameters.ContainsKey('ThumbnailPhotoFilePath')){$value = [System.IO.File]::ReadAllBytes($ThumbnailPhotoFilePath)}
+    else {$value = $ThumbnailPhotoByteArray}
+    
+    Set-AADObjectProperty -Type "users" -Id $Id -Property "thumbnailPhoto" -Value $value -IsLinked $false -ContentType "image/jpeg"
   }
 }
