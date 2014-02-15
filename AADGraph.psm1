@@ -44,7 +44,18 @@ function Get-AuthenticationResult(){
 }
 
 function Connect-AAD {
-  PROCESS {
+  [CmdletBinding()]
+  param (
+    [parameter(
+        Mandatory=$false,
+        ValueFromPipeline=$true,
+        HelpMessage="The Azure Active Directory Graph API version number: YYYY-MM-DD")]
+    [ValidatePattern("\d{4}-\d{2}-\d{2}")]
+    [string]
+    $GraphApiVersion="2013-11-08"
+  )
+  process {
+    $global:graphApiVersion = $GraphApiVersion
     $global:authenticationResult = $null
     $global:authenticationResult = Get-AuthenticationResult
   }
