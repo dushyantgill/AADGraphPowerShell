@@ -31,21 +31,69 @@ function Load-ActiveDirectoryAuthenticationLibrary(){
   }
 }
 
-function Get-AuthenticationResult(){
+function Get-AuthenticationResult {
+
+  [CmdletBinding()]
+  param (
+    [parameter(
+        Mandatory=$false,
+        ValueFromPipeline=$true,
+        HelpMessage="Pre-populate the username field")]
+    [string]
+    $As,
+
+    [parameter(
+        Mandatory=$false,
+        ValueFromPipeline=$true,
+        HelpMessage="Force prompt for user credentials")]
+    [switch]
+    $ForcePrompt
+  )
+
   $clientId = "1950a258-227b-4e31-a9cf-717495945fc2"
   $redirectUri = "urn:ietf:wg:oauth:2.0:oob"
   $resourceClientId = "00000002-0000-0000-c000-000000000000"
   $resourceAppIdURI = "https://graph.windows.net"
   $authority = "https://login.windows.net/common"
   
-  $authContext = New-Object "Microsoft.IdentityModel.Clients.ActiveDirectory.AuthenticationContext" -ArgumentList $authority,$false
-  $authResult = $authContext.AcquireToken($resourceAppIdURI, $clientId, $redirectUri)
+
+  if (-not [string]::IsNullOrEmpty($As)) {
+    Add-Type -AssemblyName System.Web
+    $login_hint = [System.Web.HttpUtility]::UrlEncode($As)
+    $extraQueryParameters = "login_hint=$login_hint"
+    $ForcePrompt = $true
+  }
+
+  if ($ForcePrompt) {
+    $promptBehavior = [Microsoft.IdentityModel.Clients.ActiveDirectory.PromptBehavior]::Always
+  } else {
+    $promptBehavior = [Microsoft.IdentityModel.Clients.ActiveDirectory.PromptBehavior]::Auto
+  }
+
+  $authContext = New-Object "Microsoft.IdentityModel.Clients.ActiveDirectory.AuthenticationContext" `
+                    -ArgumentList $authority,$false
+  $authResult = $authContext.AcquireToken($resourceAppIdURI, $clientId, `
+                    $redirectUri, $promptBehavior, $extraQueryParameters)
   return $authResult
 }
 
 function Connect-AAD {
   [CmdletBinding()]
   param (
+    [parameter(
+        Mandatory=$false,
+        ValueFromPipeline=$true,
+        HelpMessage="Pre-populate the username field")]
+    [string]
+    $As,
+        
+    [parameter(
+        Mandatory=$false,
+        ValueFromPipeline=$true,
+        HelpMessage="Force prompt for user credentials (usefull for changing users)")]
+    [switch]
+    $ForcePrompt,
+
     [parameter(
         Mandatory=$false,
         ValueFromPipeline=$true,
@@ -57,7 +105,7 @@ function Connect-AAD {
   process {
     $global:graphApiVersion = $GraphApiVersion
     $global:authenticationResult = $null
-    $global:authenticationResult = Get-AuthenticationResult
+    $global:authenticationResult = Get-AuthenticationResult -As $As -ForcePrompt:$ForcePrompt
   }
 }
 
