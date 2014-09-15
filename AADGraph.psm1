@@ -72,8 +72,10 @@ function Get-AuthenticationResult {
 
   $authContext = New-Object "Microsoft.IdentityModel.Clients.ActiveDirectory.AuthenticationContext" `
                     -ArgumentList $authority,$false
+
+  $userId = [Microsoft.IdentityModel.Clients.ActiveDirectory.UserIdentifier]::AnyUser
   $authResult = $authContext.AcquireToken($resourceAppIdURI, $clientId, `
-                    $redirectUri, $promptBehavior, $extraQueryParameters)
+                    $redirectUri, $promptBehavior, $userId, $extraQueryParameters)
   return $authResult
 }
 
