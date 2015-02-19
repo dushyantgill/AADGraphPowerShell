@@ -1,13 +1,17 @@
-function Get-AADObject([string]$type) {
+function Get-AADObject([string]$Type, [string]$Query="", [switch] $Silent) {
   $objects = $null
-  if($authenticationResult -ne $null){
-    $header = $authenticationResult.CreateAuthorizationHeader()
-    $uri = [string]::Format("https://graph.windows.net/{0}/{1}?api-version=2013-04-05",$authenticationResult.TenantId, $type)
-    Write-Host HTTP GET $uri -ForegroundColor Cyan
+  if($global:aadGPoShAuthResult -ne $null){
+    $header = $global:aadGPoShAuthResult.CreateAuthorizationHeader()
+    $uri = [string]::Format("{0}{1}/{2}?api-version={3}{4}",$global:aadGPoShGraphUrl,$global:aadGPoShAuthResult.TenantId,$Type.Trim(),$global:aadGPoShGraphVer,$Query)
+    if(-not $Silent){
+      Write-Host HTTP GET $uri -ForegroundColor Cyan
+    }
     $result = Invoke-WebRequest -Method Get -Uri $uri -Headers @{"Authorization"=$header;"Content-Type"="application/json"}
     if($result.StatusCode -eq 200)
     {
-      Write-Host "Get succeeded." -ForegroundColor Cyan
+      if(-not $Silent){
+        Write-Host "Get succeeded." -ForegroundColor Cyan
+      }
       $json = (ConvertFrom-Json $result.Content)
       if($json -ne $null){$objects = $json.value}
     }
@@ -18,16 +22,20 @@ function Get-AADObject([string]$type) {
   return $objects
 }
 
-function Get-AADObjectById([string]$type, [string]$id) {
+function Get-AADObjectById([string]$Type, [string]$Id, [switch] $Silent) {
   $object = $null
-  if($global:authenticationResult -ne $null){
-    $header = $authenticationResult.CreateAuthorizationHeader()
-    $uri = [string]::Format("https://graph.windows.net/{0}/{1}/{2}?api-version=2013-04-05",$authenticationResult.TenantId, $type.Trim(), $id.Trim())
-    Write-Host HTTP GET $uri -ForegroundColor Cyan
+  if($global:aadGPoShAuthResult -ne $null){
+    $header = $global:aadGPoShAuthResult.CreateAuthorizationHeader()
+    $uri = [string]::Format("{0}{1}/{2}/{3}?api-version={4}",$global:aadGPoShGraphUrl,$global:aadGPoShAuthResult.TenantId,$Type.Trim(), $Id.Trim(),$global:aadGPoShGraphVer)
+    if(-not $Silent){
+      Write-Host HTTP GET $uri -ForegroundColor Cyan
+    }
     $result = Invoke-WebRequest -Method Get -Uri $uri -Headers @{"Authorization"=$header;"Content-Type"="application/json"}
     if($result.StatusCode -eq 200)
     {
-      Write-Host "Get succeeded." -ForegroundColor Cyan
+      if(-not $Silent){
+        Write-Host "Get succeeded." -ForegroundColor Cyan
+      }
       $object = (ConvertFrom-Json $result.Content)
     }
   }
@@ -37,22 +45,27 @@ function Get-AADObjectById([string]$type, [string]$id) {
   return $object
 }
 
-function New-AADObject([string]$type, [object]$object) {
+function New-AADObject([string]$Type, [object]$Object, [switch] $Silent) {
   $newObject = $null
-  if($global:authenticationResult -ne $null) {
-    $header = $authenticationResult.CreateAuthorizationHeader()
-    $uri = [string]::Format("https://graph.windows.net/{0}/{1}?api-version=2013-04-05",$authenticationResult.TenantId, $type)
-    Write-Host HTTP POST $uri -ForegroundColor Cyan
+  if($global:aadGPoShAuthResult -ne $null) {
+    $header = $global:aadGPoShAuthResult.CreateAuthorizationHeader()
+    $uri = [string]::Format("{0}{1}/{2}?api-version={3}",$global:aadGPoShGraphUrl,$global:aadGPoShAuthResult.TenantId,$Type.Trim(),$global:aadGPoShGraphVer)
+    if(-not $Silent){
+      Write-Host HTTP POST $uri -ForegroundColor Cyan
+    }
     $enc = New-Object "System.Text.ASCIIEncoding"
-    $body = ConvertTo-Json -InputObject $object
-    Write-Host $body -ForegroundColor Cyan
+    $body = ConvertTo-Json -InputObject $Object -Depth 10
+    if(-not $Silent){
+      Write-Host $body -ForegroundColor Cyan
+    }
     $byteArray = $enc.GetBytes($body)
     $contentLength = $byteArray.Length
     $headers = @{"Authorization"=$header;"Content-Type"="application/json";"Content-Length"=$contentLength}
     $result = Invoke-WebRequest -Method Post -Uri $uri -Headers $headers -Body $body
-    if($result.StatusCode -eq 201)
-    {
-      Write-Host "Create succeeded." -ForegroundColor Cyan
+    if($result.StatusCode -eq 201){
+      if(-not $Silent){
+        Write-Host "Create succeeded." -ForegroundColor Cyan
+      }
       $newObject = (ConvertFrom-Json $result.Content)
     }
   }
@@ -62,21 +75,26 @@ function New-AADObject([string]$type, [object]$object) {
   return $newObject
 }
 
-function Set-AADObject([string]$type, [string]$id, [object]$object) {
-  if($global:authenticationResult -ne $null) {
-    $header = $authenticationResult.CreateAuthorizationHeader()
-    $uri = [string]::Format("https://graph.windows.net/{0}/{1}/{2}?api-version=2013-04-05",$authenticationResult.TenantId, $type, $id)
-    Write-Host HTTP PATCH $uri -ForegroundColor Cyan
+function Set-AADObject([string]$Type, [string]$Id, [object]$Object, [switch] $Silent) {
+  if($global:aadGPoShAuthResult -ne $null) {
+    $header = $global:aadGPoShAuthResult.CreateAuthorizationHeader()
+    $uri = [string]::Format("{0}{1}/{2}/{3}?api-version={4}",$global:aadGPoShGraphUrl,$global:aadGPoShAuthResult.TenantId,$Type.Trim(), $Id.Trim(),$global:aadGPoShGraphVer)
+    if(-not $Silent){
+      Write-Host HTTP PATCH $uri -ForegroundColor Cyan
+    }
     $enc = New-Object "System.Text.ASCIIEncoding"
-    $body = ConvertTo-Json -InputObject $object
-    Write-Host $body -ForegroundColor Cyan
+    $body = ConvertTo-Json -InputObject $Object -Depth 10
+    if(-not $Silent){
+      Write-Host $body -ForegroundColor Cyan
+    }
     $byteArray = $enc.GetBytes($body)
     $contentLength = $byteArray.Length
     $headers = @{"Authorization"=$header;"Content-Type"="application/json";"Content-Length"=$contentLength}
     $result = Invoke-WebRequest -Method Patch -Uri $uri -Headers $headers -Body $body
-    if($result.StatusCode -eq 204)
-    {
-      Write-Host "Update succeeded." -ForegroundColor Cyan
+    if($result.StatusCode -eq 204){
+      if(-not $Silent){
+        Write-Host "Update succeeded." -ForegroundColor Cyan
+      }
     }
   }
   else{
@@ -84,16 +102,19 @@ function Set-AADObject([string]$type, [string]$id, [object]$object) {
   }
 }
 
-function Remove-AADObject([string]$type, [string]$id) {
-  if($global:authenticationResult -ne $null) {
-    $header = $authenticationResult.CreateAuthorizationHeader()
-    $uri = [string]::Format("https://graph.windows.net/{0}/{1}/{2}?api-version=2013-04-05",$authenticationResult.TenantId, $type, $id)
-    Write-Host HTTP DELETE $uri -ForegroundColor Cyan
+function Remove-AADObject([string]$Type, [string]$Id, [switch] $Silent) {
+  if($global:aadGPoShAuthResult -ne $null) {
+    $header = $global:aadGPoShAuthResult.CreateAuthorizationHeader()
+    $uri = [string]::Format("{0}{1}/{2}/{3}?api-version={4}",$global:aadGPoShGraphUrl,$global:aadGPoShAuthResult.TenantId,$Type.Trim(), $Id.Trim(),$global:aadGPoShGraphVer)
+    if(-not $Silent){
+      Write-Host HTTP DELETE $uri -ForegroundColor Cyan
+    }
     $headers = @{"Authorization"=$header;"Content-Type"="application/json"}
     $result = Invoke-WebRequest -Method Delete -Uri $uri -Headers $headers
-    if($result.StatusCode -eq 204)
-    {
-      Write-Host "Delete succeeded." -ForegroundColor Cyan
+    if($result.StatusCode -eq 204){
+      if(-not $Silent){
+        Write-Host "Delete succeeded." -ForegroundColor Cyan
+      }
     }
   }
   else{
@@ -101,18 +122,25 @@ function Remove-AADObject([string]$type, [string]$id) {
   }
 }
 
-function Get-AADLinkedObject([string]$type, [string] $id, [string]$relationship, [bool]$getLinksOnly) {
+function Get-AADLinkedObject([string]$Type, [string] $Id, [string]$Relationship, [bool]$GetLinksOnly, [switch] $Silent) {
   $objects = $null
-  if($global:authenticationResult -ne $null){
-    $header = $authenticationResult.CreateAuthorizationHeader()
+  if($global:aadGPoShAuthResult -ne $null){
+    $header = $global:aadGPoShAuthResult.CreateAuthorizationHeader()
     $uri = $null
-    if($getLinksOnly) {$uri = [string]::Format("https://graph.windows.net/{0}/{1}/{2}/$links/{3}?api-version=2013-04-05",$authenticationResult.TenantId, $type, $id, $relationship)}
-    else {$uri = [string]::Format("https://graph.windows.net/{0}/{1}/{2}/{3}?api-version=2013-04-05",$authenticationResult.TenantId, $type, $id, $relationship)}
-    Write-Host HTTP GET $uri -ForegroundColor Cyan
+    if($GetLinksOnly) {
+      $uri = [string]::Format("{0}{1}/{2}/{3}/$links/{4}?api-version={5}",$global:aadGPoShGraphUrl,$global:aadGPoShAuthResult.TenantId, $Type, $Id, $Relationship,$global:aadGPoShGraphVer)
+    }
+    else {
+      $uri = [string]::Format("{0}{1}/{2}/{3}/{4}?api-version={5}",$global:aadGPoShGraphUrl,$global:aadGPoShAuthResult.TenantId, $Type, $Id, $Relationship,$global:aadGPoShGraphVer)
+    }
+    if(-not $Silent){
+      Write-Host HTTP GET $uri -ForegroundColor Cyan
+    }
     $result = Invoke-WebRequest -Method Get -Uri $uri -Headers @{"Authorization"=$header;"Content-Type"="application/json"}
-    if($result.StatusCode -eq 200)
-    {
-      Write-Host "Get succeeded." -ForegroundColor Cyan
+    if($result.StatusCode -eq 200){
+      if(-not $Silent){
+        Write-Host "Get succeeded." -ForegroundColor Cyan
+      }
       $json = (ConvertFrom-Json $result.Content)
       if($json -ne $null){$objects = $json.value}
     }
@@ -123,36 +151,47 @@ function Get-AADLinkedObject([string]$type, [string] $id, [string]$relationship,
   return $objects
 }
 
-function Set-AADObjectProperty([string]$type, [string] $id, [string]$property, [object]$value, [bool]$isLinked, [string]$contentType) {
-  if($global:authenticationResult -ne $null) {
-    $header = $authenticationResult.CreateAuthorizationHeader()
+function Set-AADObjectProperty([string]$Type, [string] $Id, [string]$Property, [object]$Value, [bool]$IsLinked, [string]$ContentType, [ValidateSet("PUT", "POST", ignorecase=$true)][string]$HTTPMethod = "PUT", [switch] $Silent) {
+  if($global:aadGPoShAuthResult -ne $null) {
+    $header = $global:aadGPoShAuthResult.CreateAuthorizationHeader()
     $uri = $null
-    if($isLinked) {$uri = [string]::Format('https://graph.windows.net/{0}/{1}/{2}/$links/{3}?api-version=2013-04-05',$authenticationResult.TenantId, $type, $id, $property)}
-    else {$uri = [string]::Format('https://graph.windows.net/{0}/{1}/{2}/{3}?api-version=2013-04-05',$authenticationResult.TenantId, $type, $id, $property)}
-    Write-Host HTTP PUT $uri -ForegroundColor Cyan
-
+    if($IsLinked) {
+      $uri = [string]::Format('{0}{1}/{2}/{3}/$links/{4}?api-version={5}',$global:aadGPoShGraphUrl,$global:aadGPoShAuthResult.TenantId,$Type, $Id, $Property,$global:aadGPoShGraphVer)
+    }
+    else {
+      $uri = [string]::Format('{0}{1}/{2}/{3}/{4}?api-version={5}',$global:aadGPoShGraphUrl,$global:aadGPoShAuthResult.TenantId,$Type, $Id, $Property,$global:aadGPoShGraphVer)
+    }
+    
+    if(-not $Silent){
+      Write-Host HTTP $HTTPMethod.ToUpper() $uri -ForegroundColor Cyan
+    }
     $body = $null
     $byteArray = $null
     
     if($contentType.Trim() -eq "" -or $contentType -eq $null -or $contentType.ToLower() -eq "application/json") {
       $contentType = "application/json"
       $enc = New-Object "System.Text.ASCIIEncoding"
-      $body = ConvertTo-Json -InputObject $value
+      $body = ConvertTo-Json -InputObject $Value -Depth 10
       $byteArray = $enc.GetBytes($body)
-      Write-Host $body -ForegroundColor Cyan
+      if(-not $Silent){
+        Write-Host $body -ForegroundColor Cyan
+      }
     }
     elseif ($contentType.ToLower() -eq "image/jpeg" -or $contentType.ToLower() -eq "image/png" -or $contentType.ToLower() -eq "image/gif") {
       $contentType = $contentType.ToLower()
-      $body = $value
-      $byteArray = $value
-      Write-Host "Body of the request is binary data." -ForegroundColor Cyan
+      $body = $Value
+      $byteArray = $Value
+      if(-not $Silent){
+        Write-Host "Body of the request is binary data." -ForegroundColor Cyan
+      }
     }
     $contentLength = $byteArray.Length
     $headers = @{"Authorization"=$header;"Content-Type"=$contentType;"Content-Length"=$contentLength}
-    $result = Invoke-WebRequest -Method Put -Uri $uri -Headers $headers -Body $body
-    if($result.StatusCode -eq 204)
-    {
-      Write-Host "Update succeeded." -ForegroundColor Cyan
+    $result = Invoke-WebRequest -Method $HTTPMethod -Uri $uri -Headers $headers -Body $body
+    if($result.StatusCode -eq 204){
+      if(-not $Silent){
+        Write-Host "Update succeeded." -ForegroundColor Cyan
+      }
     }
   }
   else{

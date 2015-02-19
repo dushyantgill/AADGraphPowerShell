@@ -5,14 +5,21 @@ function Get-AADUser {
     ValueFromPipeline=$true,
     HelpMessage="Either the ObjectId or the UserPrincipalName of the User.")]
     [string]
-    $Id
+    $Id,
+    
+    [parameter(Mandatory=$false,
+    HelpMessage="Suppress console output.")]
+    [switch]
+    $Silent
   )
   PROCESS {
-    if($Id -ne "") {
-      Get-AADObjectById -Type "users" -Id $id
+    if($Id -ne $null -and $Id -ne "") {
+      if($Silent){Get-AADObjectById -Type "users" -Id $id -Silent}
+      else{Get-AADObjectById -Type "users" -Id $id}
     }
     else {
-      Get-AADObject -Type "users"
+      if($Silent){Get-AADObject -Type "users" -Silent}
+      else{Get-AADObject -Type "users"}
     }
   }
 }
@@ -150,7 +157,12 @@ function New-AADUser {
     [parameter(Mandatory=$false, ValueFromPipelineByPropertyName=$true,
     HelpMessage="Not sure what this is :).")]
     [string]
-    $usageLocation
+    $usageLocation,
+    
+    [parameter(Mandatory=$false,
+    HelpMessage="Suppress console output.")]
+    [switch]
+    $Silent
   )
   PROCESS {
     # Mandatory properties of a new User
@@ -178,8 +190,8 @@ function New-AADUser {
         }
       }
     }
-    
-    New-AADObject -Type users -Object $newUser
+    if($Silent){New-AADObject -Type users -Object $newUser -Silent}
+    else{New-AADObject -Type users -Object $newUser}
   }
 }
 
@@ -190,10 +202,16 @@ function Remove-AADUser {
     ValueFromPipeline=$true,
     HelpMessage="Either the ObjectId or the UserPrincipalName of the User.")]
     [string]
-    $Id
+    $Id,
+    
+    [parameter(Mandatory=$false,
+    HelpMessage="Suppress console output.")]
+    [switch]
+    $Silent
   )
   PROCESS {
-    Remove-AADObject -Type "users" -Id $id
+    if($Silent){Remove-AADObject -Type "users" -Id $id -Silent}
+    else{Remove-AADObject -Type "users" -Id $id}
   }
 }
 
@@ -336,7 +354,12 @@ function Set-AADUser {
     [parameter(Mandatory=$false,
     HelpMessage="Not sure what this is :).")]
     [string]
-    $usageLocation
+    $usageLocation,
+    
+    [parameter(Mandatory=$false,
+    HelpMessage="Suppress console output.")]
+    [switch]
+    $Silent
   )
   PROCESS {
     $updatedUser = New-Object System.Object
@@ -358,8 +381,8 @@ function Set-AADUser {
       $updatedUserPasswordProfile.forceChangePasswordNextLogin = $forceChangePasswordNextLogin
       $updatedUser.passwordProfile = $updatedUserPasswordProfile
     }
-    
-    Set-AADObject -Type users -Id $Id -Object $updatedUser
+    if($Silent){Set-AADObject -Type users -Id $Id -Object $updatedUser -Silent}
+    else{Set-AADObject -Type users -Id $Id -Object $updatedUser}
   }
 }
 
@@ -384,13 +407,18 @@ function Set-AADUserThumbnailPhoto {
     HelpMessage="Byte array representation of the thumbnail photo of the user.",
     ParameterSetName='ByteArray')]
     [byte[]]
-    $ThumbnailPhotoByteArray  
+    $ThumbnailPhotoByteArray,
+    
+    [parameter(Mandatory=$false,
+    HelpMessage="Suppress console output.")]
+    [switch]
+    $Silent  
   )
   PROCESS {
     $value = $null
     if($PSBoundParameters.ContainsKey('ThumbnailPhotoFilePath')){$value = [System.IO.File]::ReadAllBytes($ThumbnailPhotoFilePath)}
     else {$value = $ThumbnailPhotoByteArray}
-    
-    Set-AADObjectProperty -Type "users" -Id $Id -Property "thumbnailPhoto" -Value $value -IsLinked $false -ContentType "image/jpeg"
+    if($Silent){Set-AADObjectProperty -Type "users" -Id $Id -Property "thumbnailPhoto" -Value $value -IsLinked $false -ContentType "image/jpeg" -Silent}
+    else{Set-AADObjectProperty -Type "users" -Id $Id -Property "thumbnailPhoto" -Value $value -IsLinked $false -ContentType "image/jpeg"}
   }
 }

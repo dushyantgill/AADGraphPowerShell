@@ -1,5 +1,17 @@
+$myDocumentsModuleFolderIsInPSModulePath = $false
+[Environment]::GetEnvironmentVariable("PSModulePath") -Split ';' | % {
+  if ($_.ToLower() -eq ([Environment]::GetFolderPath("MyDocuments") + "\WindowsPowerShell\Modules").ToLower()){
+    $myDocumentsModuleFolderIsInPSModulePath = $true
+  }
+}
+if(-not $myDocumentsModuleFolderIsInPSModulePath){
+  $newPSModulePath = [Environment]::GetEnvironmentVariable("PSModulePath") + ";" + [Environment]::GetFolderPath("MyDocuments") + "\WindowsPowerShell\Modules";
+  [Environment]::SetEnvironmentVariable("PSModulePath",$newPSModulePath, "Process")
+  [Environment]::SetEnvironmentVariable("PSModulePath",$newPSModulePath, "User")
+}
+
 $filesDirPath = Split-Path -Path $MyInvocation.MyCommand.Definition -Parent
-$moduleDirPath = ($ENV:PSModulePath -split ';')[0]
+$moduleDirPath = [Environment]::GetFolderPath("MyDocuments") + "\WindowsPowerShell\Modules"
 $modulePath = $moduleDirPath + "\AADGraph"
 
 if (Test-Path $modulePath)

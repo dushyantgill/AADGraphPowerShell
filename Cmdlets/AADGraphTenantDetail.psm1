@@ -1,6 +1,14 @@
 function Get-AADTenantDetail {
+  [CmdletBinding()]
+  param (
+    [parameter(Mandatory=$false,
+    HelpMessage="Suppress console output.")]
+    [switch]
+    $Silent
+  )
   PROCESS {
-    Get-AADObject -Type "tenantDetails"
+    if($Silent){Get-AADObject -Type "tenantDetails" -Silent}
+    else{Get-AADObject -Type "tenantDetails"}
   }
 }
 
@@ -15,7 +23,12 @@ function Set-AADTenantDetail {
     [parameter(Mandatory=$false,
     HelpMessage="A list of additional email addresses for the user.")]
     [string[]]
-    $technicalNotificationMails
+    $technicalNotificationMails,
+    
+    [parameter(Mandatory=$false,
+    HelpMessage="Suppress console output.")]
+    [switch]
+    $Silent
   )
   PROCESS {
     $updatedTenantDetail = New-Object System.Object
@@ -27,6 +40,7 @@ function Set-AADTenantDetail {
         Add-Member -InputObject $updatedTenantDetail -MemberType NoteProperty -Name $key -Value $value
       }
     }
-    Set-AADObject -Type tenantDetails -Object $updatedUser
+    if($Silent){Set-AADObject -Type tenantDetails -Object $updatedTenantDetail -Silent}
+    else{Set-AADObject -Type tenantDetails -Object $updatedTenantDetail}
   }
 }
