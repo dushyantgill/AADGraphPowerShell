@@ -146,27 +146,32 @@ function Remove-AADObject([string]$Type, [string]$Id, [switch] $Silent) {
   }
 }
 
-function Get-AADLinkedObject([string]$Type, [string] $Id, [string]$Relationship, [bool]$GetLinksOnly, [switch] $Silent) {
+function Get-AADLinkedObject([string]$Type, [string] $Id, [string]$Relationship, [switch]$GetLinksOnly, [switch] $Binary, [switch] $Silent) {
   $objects = $null
   if($global:aadGPoShAuthResult -ne $null){
     $header = $global:aadGPoShAuthResult.CreateAuthorizationHeader()
     $uri = $null
     if($GetLinksOnly) {
-      $uri = [string]::Format("{0}{1}/{2}/{3}/$links/{4}?api-version={5}",$global:aadGPoShGraphUrl,$global:aadGPoShAuthResult.TenantId, $Type, $Id, $Relationship,$global:aadGPoShGraphVer)
+      $uri = [string]::Format("{0}{1}/{2}/{3}/`$links/{4}?api-version={5}",$global:aadGPoShGraphUrl,$global:aadGPoShAuthResult.TenantId, $Type, $Id, $Relationship,$global:aadGPoShGraphVer)
     }
     else {
       $uri = [string]::Format("{0}{1}/{2}/{3}/{4}?api-version={5}",$global:aadGPoShGraphUrl,$global:aadGPoShAuthResult.TenantId, $Type, $Id, $Relationship,$global:aadGPoShGraphVer)
     }
-    if(-not $Silent){
+    if(-not $Silent) {
       Write-Host HTTP GET $uri -ForegroundColor Cyan
     }
     $result = Invoke-WebRequest -Method Get -Uri $uri -Headers @{"Authorization"=$header;"Content-Type"="application/json"}
     if($result.StatusCode -eq 200){
-      if(-not $Silent){
+      if(-not $Silent) {
         Write-Host "Get succeeded." -ForegroundColor Cyan
       }
-      $json = (ConvertFrom-Json $result.Content)
-      if($json -ne $null){$objects = $json.value}
+      if(-not $Binary) {
+        $json = (ConvertFrom-Json $result.Content)
+        if($json -ne $null){$objects = $json.value}
+      }
+      else {
+        $objects = $result.Content
+      }
     }
   }
   else{
