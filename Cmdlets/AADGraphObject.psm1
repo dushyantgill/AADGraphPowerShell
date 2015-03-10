@@ -146,7 +146,7 @@ function Remove-AADObject([string]$Type, [string]$Id, [switch] $Silent) {
   }
 }
 
-function Get-AADLinkedObject([string]$Type, [string] $Id, [string]$Relationship, [switch]$GetLinksOnly, [switch] $Binary, [switch] $Silent) {
+function Get-AADLinkedObject([string]$Type, [string] $Id, [string]$Relationship, [switch]$GetLinksOnly, [switch]$Binary, [switch]$All, [switch]$Silent) {
   $objects = $null
   if($global:aadGPoShAuthResult -ne $null){
     $header = $global:aadGPoShAuthResult.CreateAuthorizationHeader()
@@ -167,7 +167,32 @@ function Get-AADLinkedObject([string]$Type, [string] $Id, [string]$Relationship,
       }
       if(-not $Binary) {
         $json = (ConvertFrom-Json $result.Content)
-        if($json -ne $null){$objects = $json.value}
+        if($json -ne $null){
+          $objects = $json.value
+          $nextLink = $json."odata.nextLink"
+          if($nextLink -ne $null){
+            if($all){
+              $getNextPage = $true
+              do{
+                if(-not $Silent){
+                  Write-Host "Getting the next page of results." -ForegroundColor Cyan
+                  Write-Host HTTP GET ($uri + "&" + $nextLink.Split('?')[1]) -ForegroundColor Cyan
+                }
+                $result = Invoke-WebRequest -Method Get -Uri ($uri + "&" + $nextLink.Split('?')[1]) -Headers @{"Authorization"=$header;"Content-Type"="application/json"}
+                if($result.StatusCode -eq 200){
+                  $json = (ConvertFrom-Json $result.Content)
+                  if($json -ne $null){
+                    $objects += $json.value
+                    $nextLink = $json."odata.nextLink"
+                    if($nextLink -ne $null){$getNextPage = $true}
+                    else{$getNextPage = $false}
+                  }
+                }
+              }
+              until(-not $getNextPage)
+            }
+          }
+        }
       }
       else {
         $objects = $result.Content
